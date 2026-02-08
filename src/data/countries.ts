@@ -1,0 +1,127 @@
+import { Country } from "@/types/fantasy";
+
+// All countries competing in the 2026 Milan Cortina Winter Olympics
+// Using official IOC 3-letter codes
+export const AVAILABLE_COUNTRIES: Country[] = [
+// Major Winter Sports Nations
+  { code: "NOR", name: "Norway", flag: "🇳🇴" },
+  { code: "USA", name: "United States", flag: "🇺🇸" },
+  { code: "CAN", name: "Canada", flag: "🇨🇦" },
+  { code: "GER", name: "Germany", flag: "🇩🇪" },
+  { code: "SWE", name: "Sweden", flag: "🇸🇪" },
+  { code: "SUI", name: "Switzerland", flag: "🇨🇭" },
+  { code: "AUT", name: "Austria", flag: "🇦🇹" },
+  { code: "FRA", name: "France", flag: "🇫🇷" },
+  { code: "ITA", name: "Italy", flag: "🇮🇹" },
+  { code: "NED", name: "Netherlands", flag: "🇳🇱" },
+  { code: "JPN", name: "Japan", flag: "🇯🇵" },
+  { code: "CHN", name: "China", flag: "🇨🇳" },
+  { code: "KOR", name: "South Korea", flag: "🇰🇷" },
+  { code: "AIN", name: "Individual Neutral Athletes", flag: "🏳️" },
+  { code: "FIN", name: "Finland", flag: "🇫🇮" },
+  
+  // European Nations
+  { code: "CZE", name: "Czech Republic", flag: "🇨🇿" },
+  { code: "SLO", name: "Slovenia", flag: "🇸🇮" },
+  { code: "POL", name: "Poland", flag: "🇵🇱" },
+  { code: "GBR", name: "Great Britain", flag: "🇬🇧" },
+  { code: "BEL", name: "Belgium", flag: "🇧🇪" },
+  { code: "ESP", name: "Spain", flag: "🇪🇸" },
+  { code: "SVK", name: "Slovakia", flag: "🇸🇰" },
+  { code: "UKR", name: "Ukraine", flag: "🇺🇦" },
+  { code: "LAT", name: "Latvia", flag: "🇱🇻" },
+  { code: "EST", name: "Estonia", flag: "🇪🇪" },
+  { code: "LTU", name: "Lithuania", flag: "🇱🇹" },
+  { code: "BUL", name: "Bulgaria", flag: "🇧🇬" },
+  { code: "ROU", name: "Romania", flag: "🇷🇴" },
+  { code: "HUN", name: "Hungary", flag: "🇭🇺" },
+  { code: "CRO", name: "Croatia", flag: "🇭🇷" },
+  { code: "SRB", name: "Serbia", flag: "🇷🇸" },
+  { code: "BIH", name: "Bosnia and Herzegovina", flag: "🇧🇦" },
+  { code: "MKD", name: "North Macedonia", flag: "🇲🇰" },
+  { code: "MNE", name: "Montenegro", flag: "🇲🇪" },
+  { code: "ALB", name: "Albania", flag: "🇦🇱" },
+  { code: "GRE", name: "Greece", flag: "🇬🇷" },
+  { code: "CYP", name: "Cyprus", flag: "🇨🇾" },
+  { code: "TUR", name: "Turkey", flag: "🇹🇷" },
+  { code: "POR", name: "Portugal", flag: "🇵🇹" },
+  { code: "IRL", name: "Ireland", flag: "🇮🇪" },
+  { code: "DEN", name: "Denmark", flag: "🇩🇰" },
+  { code: "ISL", name: "Iceland", flag: "🇮🇸" },
+  { code: "LUX", name: "Luxembourg", flag: "🇱🇺" },
+  { code: "MON", name: "Monaco", flag: "🇲🇨" },
+  { code: "AND", name: "Andorra", flag: "🇦🇩" },
+  { code: "LIE", name: "Liechtenstein", flag: "🇱🇮" },
+  { code: "SMR", name: "San Marino", flag: "🇸🇲" },
+  { code: "MLT", name: "Malta", flag: "🇲🇹" },
+  { code: "BLR", name: "Belarus", flag: "🇧🇾" },
+  { code: "MDA", name: "Moldova", flag: "🇲🇩" },
+  
+  // Nordic & Baltic
+  { code: "FAR", name: "Faroe Islands", flag: "🇫🇴" },
+  
+  // Central Asian Nations
+  { code: "KAZ", name: "Kazakhstan", flag: "🇰🇿" },
+  { code: "UZB", name: "Uzbekistan", flag: "🇺🇿" },
+  { code: "KGZ", name: "Kyrgyzstan", flag: "🇰🇬" },
+  { code: "TJK", name: "Tajikistan", flag: "🇹🇯" },
+  { code: "TKM", name: "Turkmenistan", flag: "🇹🇲" },
+  { code: "MGL", name: "Mongolia", flag: "🇲🇳" },
+  
+  // Caucasus
+  { code: "GEO", name: "Georgia", flag: "🇬🇪" },
+  { code: "ARM", name: "Armenia", flag: "🇦🇲" },
+  { code: "AZE", name: "Azerbaijan", flag: "🇦🇿" },
+  
+  // Asia Pacific
+  { code: "AUS", name: "Australia", flag: "🇦🇺" },
+  { code: "NZL", name: "New Zealand", flag: "🇳🇿" },
+  { code: "TPE", name: "Chinese Taipei", flag: "🇹🇼" },
+  { code: "HKG", name: "Hong Kong", flag: "🇭🇰" },
+  { code: "THA", name: "Thailand", flag: "🇹🇭" },
+  { code: "PHI", name: "Philippines", flag: "🇵🇭" },
+  { code: "IND", name: "India", flag: "🇮🇳" },
+  { code: "PAK", name: "Pakistan", flag: "🇵🇰" },
+  { code: "MAS", name: "Malaysia", flag: "🇲🇾" },
+  { code: "SGP", name: "Singapore", flag: "🇸🇬" },
+  { code: "INA", name: "Indonesia", flag: "🇮🇩" },
+  { code: "PRK", name: "North Korea", flag: "🇰🇵" },
+  
+  // Americas
+  { code: "MEX", name: "Mexico", flag: "🇲🇽" },
+  { code: "ARG", name: "Argentina", flag: "🇦🇷" },
+  { code: "BRA", name: "Brazil", flag: "🇧🇷" },
+  { code: "CHI", name: "Chile", flag: "🇨🇱" },
+  { code: "COL", name: "Colombia", flag: "🇨🇴" },
+  { code: "PER", name: "Peru", flag: "🇵🇪" },
+  { code: "ECU", name: "Ecuador", flag: "🇪🇨" },
+  { code: "BOL", name: "Bolivia", flag: "🇧🇴" },
+  { code: "JAM", name: "Jamaica", flag: "🇯🇲" },
+  { code: "PUR", name: "Puerto Rico", flag: "🇵🇷" },
+  { code: "TTO", name: "Trinidad and Tobago", flag: "🇹🇹" },
+  { code: "ISV", name: "US Virgin Islands", flag: "🇻🇮" },
+  
+  // Middle East & Africa
+  { code: "ISR", name: "Israel", flag: "🇮🇱" },
+  { code: "LBN", name: "Lebanon", flag: "🇱🇧" },
+  { code: "IRI", name: "Iran", flag: "🇮🇷" },
+  { code: "MAR", name: "Morocco", flag: "🇲🇦" },
+  { code: "RSA", name: "South Africa", flag: "🇿🇦" },
+  { code: "EGY", name: "Egypt", flag: "🇪🇬" },
+  { code: "ALG", name: "Algeria", flag: "🇩🇿" },
+  { code: "NGR", name: "Nigeria", flag: "🇳🇬" },
+  { code: "GHA", name: "Ghana", flag: "🇬🇭" },
+  { code: "KEN", name: "Kenya", flag: "🇰🇪" },
+  { code: "ERI", name: "Eritrea", flag: "🇪🇷" },
+  { code: "MAD", name: "Madagascar", flag: "🇲🇬" },
+  { code: "SAU", name: "Saudi Arabia", flag: "🇸🇦" },
+  { code: "UAE", name: "United Arab Emirates", flag: "🇦🇪" },
+  { code: "QAT", name: "Qatar", flag: "🇶🇦" },
+  { code: "KUW", name: "Kuwait", flag: "🇰🇼" },
+].sort((a, b) => a.name.localeCompare(b.name));
+
+export const TEAM_AVATARS = [
+  "⛷️", "🏂", "🎿", "🥌", "⛸️", "🏒", "🛷", "🎯",
+  "🏔️", "❄️", "🌨️", "⭐", "🔥", "💎", "🦅", "🐺",
+  "🦊", "🐻", "🦌", "🐧", "🦁", "🐯", "🦄", "🎪",
+];
