@@ -20,7 +20,10 @@
       "Bash(npm query:*)",
       "Bash(npm audit:*)",
       "Bash(npx tsc:*)",
-      "Bash(npx @convex-dev/auth:*)"
+      "Bash(npx @convex-dev/auth:*)",
+      "Bash(npx convex typecheck:*)",
+      "Bash(npx --yes svg-to-ico:*)",
+      "Bash(sips:*)"
     ]
   }
 }

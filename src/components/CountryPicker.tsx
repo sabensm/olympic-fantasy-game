@@ -21,6 +21,14 @@ export const CountryPicker = ({
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Scroll search input into view when dropdown opens so results are visible
+  useEffect(() => {
+    if (isOpen && searchRef.current) {
+      searchRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [isOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -68,7 +76,7 @@ export const CountryPicker = ({
       )}
 
       {/* Search Input */}
-      <div className="relative">
+      <div className="relative" ref={searchRef}>
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input

@@ -107,7 +107,7 @@ export const TeamEditor = ({
         </DialogHeader>
 
         <ScrollArea className="max-h-[60vh] pr-4">
-          <div className="space-y-4">
+          <div className="space-y-4 p-1">
             {/* Team Name */}
             <div className="space-y-2">
               <Label htmlFor="name">Team Name</Label>

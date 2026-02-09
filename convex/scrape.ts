@@ -1,6 +1,6 @@
 "use node";
 
-import { action } from "./_generated/server";
+import { action, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import * as cheerio from "cheerio";
 import type { Element } from "domhandler";
@@ -119,6 +119,107 @@ async function fetchWithRetry(
   throw new Error("Unreachable");
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function doScrape(ctx: { runMutation: any }) {
+  console.log("Fetching Wikipedia medal table...");
+  const response = await fetchWithRetry(WIKIPEDIA_URL);
+
+  const html = await response.text();
+  const $ = cheerio.load(html);
+
+  // Find the medal table - look for a wikitable with Gold/Silver/Bronze headers
+  let medalTable: cheerio.Cheerio<Element> | null = null;
+  $("table.wikitable").each((_, table) => {
+    const headerText = $(table).find("th").text();
+    if (
+      headerText.includes("Gold") &&
+      headerText.includes("Silver") &&
+      headerText.includes("Bronze")
+    ) {
+      medalTable = $(table);
+      return false; // break
+    }
+  });
+
+  if (!medalTable) {
+    throw new Error("Could not find medal table on Wikipedia page");
+  }
+
+  const records: {
+    country: string;
+    countryCode: string;
+    countryFlag?: string;
+    gold: number;
+    silver: number;
+    bronze: number;
+    total: number;
+  }[] = [];
+
+  $(medalTable!)
+    .find("tr")
+    .each((_, row) => {
+      // Country name is in a <th scope="row">, not a <td>
+      const countryHeader = $(row).find('th[scope="row"]');
+      if (countryHeader.length === 0) return; // skip header/total rows
+
+      const headerText = countryHeader.text().trim();
+      if (headerText.toLowerCase().startsWith("total") || headerText === "") return;
+
+      // Extract country name from the link inside the <th>
+      const countryLink = countryHeader.find("a").last();
+      let country = countryLink.text().trim() || headerText;
+
+      // Remove trailing asterisk (host nation marker) and whitespace
+      country = country.replace(/\*+$/, "").trim();
+
+      // Look up IOC code from country name — skip unknown countries
+      const countryCode = COUNTRY_TO_IOC[country];
+      if (!countryCode) {
+        console.warn(`Unknown country "${country}" — skipping`);
+        return;
+      }
+      const countryFlag = IOC_FLAGS[countryCode];
+
+      // Medal counts are in the <td> cells
+      const cells = $(row).find("td");
+      const numbers = cells
+        .map((_, cell) => {
+          const num = parseInt($(cell).text().trim(), 10);
+          return isNaN(num) ? null : num;
+        })
+        .get()
+        .filter((n): n is number => n !== null);
+
+      // Numbers should be: rank, gold, silver, bronze, total
+      // Take the last 4 values for medal counts
+      if (numbers.length >= 4) {
+        const total = numbers[numbers.length - 1];
+        const bronze = numbers[numbers.length - 2];
+        const silver = numbers[numbers.length - 3];
+        const gold = numbers[numbers.length - 4];
+
+        if (country) {
+          records.push({ country, countryCode, countryFlag, gold, silver, bronze, total });
+        }
+      }
+    });
+
+  console.log(`Parsed ${records.length} countries from Wikipedia.`);
+
+  if (records.length === 0) {
+    console.warn("No medal data found — table may not be populated yet or Wikipedia layout changed.");
+    return;
+  }
+
+  if (records.length < 5) {
+    console.warn(`Only ${records.length} countries parsed — possible Wikipedia layout change. Skipping update.`);
+    return;
+  }
+
+  await ctx.runMutation(internal.medals.upsertMedals, { records });
+  console.log("Medal data saved to Convex.");
+}
+
 export const scrapeWikipedia = action({
   args: {},
   handler: async (ctx) => {
@@ -126,103 +227,16 @@ export const scrapeWikipedia = action({
       console.log("Outside Milan active hours (09:00-23:59 CET). Skipping.");
       return;
     }
+    await doScrape(ctx);
+  },
+});
 
-    console.log("Fetching Wikipedia medal table...");
-    const response = await fetchWithRetry(WIKIPEDIA_URL);
-
-    const html = await response.text();
-    const $ = cheerio.load(html);
-
-    // Find the medal table - look for a wikitable with Gold/Silver/Bronze headers
-    let medalTable: cheerio.Cheerio<Element> | null = null;
-    $("table.wikitable").each((_, table) => {
-      const headerText = $(table).find("th").text();
-      if (
-        headerText.includes("Gold") &&
-        headerText.includes("Silver") &&
-        headerText.includes("Bronze")
-      ) {
-        medalTable = $(table);
-        return false; // break
-      }
-    });
-
-    if (!medalTable) {
-      throw new Error("Could not find medal table on Wikipedia page");
-    }
-
-    const records: {
-      country: string;
-      countryCode: string;
-      countryFlag?: string;
-      gold: number;
-      silver: number;
-      bronze: number;
-      total: number;
-    }[] = [];
-
-    $(medalTable!)
-      .find("tr")
-      .each((_, row) => {
-        // Country name is in a <th scope="row">, not a <td>
-        const countryHeader = $(row).find('th[scope="row"]');
-        if (countryHeader.length === 0) return; // skip header/total rows
-
-        const headerText = countryHeader.text().trim();
-        if (headerText.toLowerCase().startsWith("total") || headerText === "") return;
-
-        // Extract country name from the link inside the <th>
-        const countryLink = countryHeader.find("a").last();
-        let country = countryLink.text().trim() || headerText;
-
-        // Remove trailing asterisk (host nation marker) and whitespace
-        country = country.replace(/\*+$/, "").trim();
-
-        // Look up IOC code from country name — skip unknown countries
-        const countryCode = COUNTRY_TO_IOC[country];
-        if (!countryCode) {
-          console.warn(`Unknown country "${country}" — skipping`);
-          return;
-        }
-        const countryFlag = IOC_FLAGS[countryCode];
-
-        // Medal counts are in the <td> cells
-        const cells = $(row).find("td");
-        const numbers = cells
-          .map((_, cell) => {
-            const num = parseInt($(cell).text().trim(), 10);
-            return isNaN(num) ? null : num;
-          })
-          .get()
-          .filter((n): n is number => n !== null);
-
-        // Numbers should be: rank, gold, silver, bronze, total
-        // Take the last 4 values for medal counts
-        if (numbers.length >= 4) {
-          const total = numbers[numbers.length - 1];
-          const bronze = numbers[numbers.length - 2];
-          const silver = numbers[numbers.length - 3];
-          const gold = numbers[numbers.length - 4];
-
-          if (country) {
-            records.push({ country, countryCode, countryFlag, gold, silver, bronze, total });
-          }
-        }
-      });
-
-    console.log(`Parsed ${records.length} countries from Wikipedia.`);
-
-    if (records.length === 0) {
-      console.warn("No medal data found — table may not be populated yet or Wikipedia layout changed.");
-      return;
-    }
-
-    if (records.length < 5) {
-      console.warn(`Only ${records.length} countries parsed — possible Wikipedia layout change. Skipping update.`);
-      return;
-    }
-
-    await ctx.runMutation(internal.medals.upsertMedals, { records });
-    console.log("Medal data saved to Convex.");
+// Force scrape — bypasses time-of-day check.
+// Only callable from the Convex dashboard (internal action).
+export const forceScrape = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    console.log("Force scrape triggered from dashboard.");
+    await doScrape(ctx);
   },
 });

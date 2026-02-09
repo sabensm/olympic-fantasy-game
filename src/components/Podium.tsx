@@ -47,7 +47,7 @@ const PodiumBlock = ({ team, position }: PodiumBlockProps) => {
         <div className="flex flex-col items-center mb-2">
           <span className="text-2xl mb-0.5">{config.label}</span>
           <span className="text-3xl">{team.avatar}</span>
-          <span className="text-xs font-medium text-foreground truncate max-w-[80px] text-center">
+          <span className="text-xs font-medium text-foreground truncate max-w-[90px] md:max-w-[100px] text-center">
             {team.name}
           </span>
         </div>
