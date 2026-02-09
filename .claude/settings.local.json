@@ -19,7 +19,8 @@
       "Bash(ls:*)",
       "Bash(npm query:*)",
       "Bash(npm audit:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npx @convex-dev/auth:*)"
     ]
   }
 }
