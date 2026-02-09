@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -10,10 +10,16 @@ import { toast } from "sonner";
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, isAuthenticated } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,12 +31,10 @@ const SignIn = () => {
       formData.set("password", password);
       formData.set("flow", "signIn");
       await signIn("password", formData);
-      navigate("/dashboard");
     } catch (error) {
       toast.error("Sign in failed", {
         description: error instanceof Error ? error.message : "Invalid email or password",
       });
-    } finally {
       setIsSubmitting(false);
     }
   };

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Team, TieredCountry, MedalCount, TierMedalBreakdown, CountryMedalData, calculateCountryPoints } from "@/types/fantasy";
@@ -61,56 +62,61 @@ export const useFantasyData = (leagueId: Id<"leagues">) => {
 
   const isLoading = teamsData === undefined || medalsData === undefined;
 
-  // Build medal lookup
-  const medalLookup = new Map<string, MedalCount>();
-  if (medalsData) {
-    medalsData.forEach((medal) => {
-      medalLookup.set(medal.countryCode, {
-        gold: medal.gold,
-        silver: medal.silver,
-        bronze: medal.bronze,
+  // Memoize medal lookup to avoid rebuilding on every render
+  const medalLookup = useMemo(() => {
+    const lookup = new Map<string, MedalCount>();
+    if (medalsData) {
+      medalsData.forEach((medal) => {
+        lookup.set(medal.countryCode, {
+          gold: medal.gold,
+          silver: medal.silver,
+          bronze: medal.bronze,
+        });
       });
-    });
-  }
+    }
+    return lookup;
+  }, [medalsData]);
 
   // Get last medal update timestamp
   const lastMedalUpdate = medalsData && medalsData.length > 0
     ? new Date(medalsData[0].scrapedAt).toISOString()
     : null;
 
-  // Transform to Team format
-  const teams: Team[] = (teamsData || []).map((team) => {
-    const countries: TieredCountry[] = team.countries.map((tc) => ({
-      code: tc.countryCode,
-      name: tc.countryName,
-      flag: tc.countryFlag,
-      tier: getCountryTier(tc.countryCode),
-    }));
+  // Memoize team transformation + score calculations
+  const teams: Team[] = useMemo(() => {
+    return (teamsData || []).map((team) => {
+      const countries: TieredCountry[] = team.countries.map((tc) => ({
+        code: tc.countryCode,
+        name: tc.countryName,
+        flag: tc.countryFlag,
+        tier: getCountryTier(tc.countryCode),
+      }));
 
-    const medals: MedalCount = { gold: 0, silver: 0, bronze: 0 };
-    countries.forEach((country) => {
-      const countryMedals = medalLookup.get(country.code);
-      if (countryMedals) {
-        medals.gold += countryMedals.gold;
-        medals.silver += countryMedals.silver;
-        medals.bronze += countryMedals.bronze;
-      }
+      const medals: MedalCount = { gold: 0, silver: 0, bronze: 0 };
+      countries.forEach((country) => {
+        const countryMedals = medalLookup.get(country.code);
+        if (countryMedals) {
+          medals.gold += countryMedals.gold;
+          medals.silver += countryMedals.silver;
+          medals.bronze += countryMedals.bronze;
+        }
+      });
+
+      const tierBreakdown = buildTierBreakdown(countries, medalLookup);
+      const totalPoints = tierBreakdown.reduce((sum, tb) => sum + tb.totalPoints, 0);
+
+      return {
+        id: team._id,
+        name: team.name,
+        avatar: team.avatar,
+        members: team.members,
+        countries,
+        medals,
+        tierBreakdown,
+        totalPoints,
+      };
     });
-
-    const tierBreakdown = buildTierBreakdown(countries, medalLookup);
-    const totalPoints = tierBreakdown.reduce((sum, tb) => sum + tb.totalPoints, 0);
-
-    return {
-      id: team._id,
-      name: team.name,
-      avatar: team.avatar,
-      members: team.members,
-      countries,
-      medals,
-      tierBreakdown,
-      totalPoints,
-    };
-  });
+  }, [teamsData, medalLookup]);
 
   const addTeam = async (team: Omit<Team, "id">) => {
     await addTeamMutation({
@@ -144,10 +150,6 @@ export const useFantasyData = (leagueId: Id<"leagues">) => {
     await deleteTeamMutation({ id: id as Id<"teams"> });
   };
 
-  const refreshMedals = async () => {
-    // No-op: Convex queries are reactive and auto-update
-  };
-
   return {
     teams,
     isLoading,
@@ -155,6 +157,5 @@ export const useFantasyData = (leagueId: Id<"leagues">) => {
     addTeam,
     updateTeam,
     deleteTeam,
-    refreshMedals,
   };
 };

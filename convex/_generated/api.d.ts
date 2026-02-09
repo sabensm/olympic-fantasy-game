@@ -16,6 +16,7 @@ import type * as medals from "../medals.js";
 import type * as scrape from "../scrape.js";
 import type * as teams from "../teams.js";
 import type * as users from "../users.js";
+import type * as validation from "../validation.js";
 
 import type {
   ApiFromModules,
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   scrape: typeof scrape;
   teams: typeof teams;
   users: typeof users;
+  validation: typeof validation;
 }>;
 
 /**

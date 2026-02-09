@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { Team, Country, MedalCount, TieredCountry } from "@/types/fantasy";
-import { getCountryTier } from "@/data/countryTiers";
+import { Team, Country } from "@/types/fantasy";
 import { AVAILABLE_COUNTRIES, TEAM_AVATARS } from "@/data/countries";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -22,7 +21,6 @@ interface TeamEditorSaveData {
   avatar: string;
   members: string[];
   countries: Country[];
-  medals: MedalCount;
   id?: string;
 }
 
@@ -47,11 +45,6 @@ export const TeamEditor = ({
   const [avatar, setAvatar] = useState("⛷️");
   const [members, setMembers] = useState("");
   const [selectedCountries, setSelectedCountries] = useState<Country[]>([]);
-  const [medals, setMedals] = useState<MedalCount>({
-    gold: 0,
-    silver: 0,
-    bronze: 0,
-  });
 
   useEffect(() => {
     if (team) {
@@ -59,13 +52,11 @@ export const TeamEditor = ({
       setAvatar(team.avatar);
       setMembers(team.members?.join(", ") || "");
       setSelectedCountries(team.countries);
-      setMedals(team.medals);
     } else {
       setName("");
       setAvatar("⛷️");
       setMembers("");
       setSelectedCountries([]);
-      setMedals({ gold: 0, silver: 0, bronze: 0 });
     }
   }, [team, open]);
 
@@ -90,7 +81,6 @@ export const TeamEditor = ({
       avatar,
       members: parsedMembers,
       countries: selectedCountries,
-      medals,
     };
 
     if (team) {
@@ -171,52 +161,6 @@ export const TeamEditor = ({
               selectedCountries={selectedCountries}
               onToggleCountry={toggleCountry}
             />
-
-            {/* Medal Counts */}
-            <div className="space-y-2">
-              <Label>Medal Counts</Label>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">🥇 Gold</label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={medals.gold}
-                    onChange={(e) =>
-                      setMedals({ ...medals, gold: parseInt(e.target.value) || 0 })
-                    }
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">🥈 Silver</label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={medals.silver}
-                    onChange={(e) =>
-                      setMedals({
-                        ...medals,
-                        silver: parseInt(e.target.value) || 0,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">🥉 Bronze</label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={medals.bronze}
-                    onChange={(e) =>
-                      setMedals({
-                        ...medals,
-                        bronze: parseInt(e.target.value) || 0,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-            </div>
           </div>
         </ScrollArea>
 

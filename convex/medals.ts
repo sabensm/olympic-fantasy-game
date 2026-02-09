@@ -1,7 +1,7 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-export const upsertMedals = mutation({
+export const upsertMedals = internalMutation({
   args: {
     records: v.array(
       v.object({
@@ -16,8 +16,24 @@ export const upsertMedals = mutation({
     ),
   },
   handler: async (ctx, { records }) => {
-    // Delete all existing rows
+    // Guard: never wipe medal data with an empty scrape result
+    if (records.length === 0) {
+      console.warn("upsertMedals called with 0 records — skipping to protect existing data");
+      return;
+    }
+
     const existing = await ctx.db.query("medals").collect();
+
+    // Guard: if we previously had data, don't replace with a suspiciously small result
+    // (e.g., Wikipedia layout change caused partial parse)
+    if (existing.length > 10 && records.length < existing.length * 0.5) {
+      console.warn(
+        `Scrape returned ${records.length} records but ${existing.length} exist — skipping suspicious result`
+      );
+      return;
+    }
+
+    // Delete all existing rows
     for (const row of existing) {
       await ctx.db.delete(row._id);
     }

@@ -17,13 +17,14 @@ Both frontend and backend dev servers need to run simultaneously during developm
 
 ## Architecture
 
-**Frontend:** React 18 + TypeScript + Vite, using React Router (single route `/`), Tailwind CSS, and shadcn/ui components (configured in `components.json`).
+**Frontend:** React 18 + TypeScript + Vite, using React Router, Tailwind CSS, and shadcn/ui components (configured in `components.json`). Routes are lazy-loaded except Landing and NotFound.
 
 **Backend:** Convex (serverless database + functions). The `convex/` directory contains all backend code:
 - `schema.ts` — Three tables: `medals`, `teams`, `teamCountries`
 - `scrape.ts` — Node.js action (`"use node"`) that scrapes Wikipedia medal table using cheerio, runs on a 30-min cron (only during Milan active hours 09:00-23:59 CET)
-- `medals.ts` — Query/mutation for medal data (full replace on each scrape)
-- `teams.ts` — CRUD mutations and queries for teams with their country assignments
+- `medals.ts` — Query/mutation for medal data (full replace on each scrape, with guards against empty/suspicious data)
+- `teams.ts` — CRUD mutations and queries for teams with their country assignments (enforces unique country drafting per league)
+- `validation.ts` — Input validation for team names, avatars, members, and country codes
 - `crons.ts` — Cron job definitions
 
 Convex auto-generates types in `convex/_generated/` — don't edit those files.
@@ -45,7 +46,7 @@ Point calculation lives in `src/types/fantasy.ts` (`calculateCountryPoints`).
 
 ## Auth
 
-Auth is stubbed out — `src/hooks/useAuth.tsx` returns a hardcoded admin user. Everyone is admin for now.
+Uses `@convex-dev/auth` with password-based authentication. `src/hooks/useAuth.tsx` wraps the Convex auth hooks. League mutations require authentication and check that the user is the league admin. League viewing (queries) is public so shared links work for non-authenticated users.
 
 ## Environment
 

@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 
 const LeagueView = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -109,17 +110,29 @@ function LeagueContent({
     setIsEditorOpen(true);
   };
 
-  const handleSaveTeam = (teamData: any) => {
-    if ("id" in teamData && teamData.id) {
-      updateTeam(teamData.id, teamData);
-    } else {
-      addTeam(teamData);
+  const handleSaveTeam = async (teamData: any) => {
+    try {
+      if ("id" in teamData && teamData.id) {
+        await updateTeam(teamData.id, teamData);
+      } else {
+        await addTeam(teamData);
+      }
+    } catch (error) {
+      toast.error("Failed to save team", {
+        description: error instanceof Error ? error.message : "Please try again",
+      });
     }
   };
 
-  const handleDeleteTeam = () => {
+  const handleDeleteTeam = async () => {
     if (editingTeam) {
-      deleteTeam(editingTeam.id);
+      try {
+        await deleteTeam(editingTeam.id);
+      } catch (error) {
+        toast.error("Failed to delete team", {
+          description: error instanceof Error ? error.message : "Please try again",
+        });
+      }
     }
   };
 
@@ -161,6 +174,12 @@ function LeagueContent({
               )}
               <RulesModal />
             </div>
+            {isAdmin && (
+              <Button onClick={handleNewTeam} size="sm">
+                <Plus className="w-4 h-4 mr-1.5" />
+                Add Team
+              </Button>
+            )}
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -185,12 +204,13 @@ function LeagueContent({
         </div>
       </main>
 
-      {/* Floating Add Button (Admin Only) */}
+      {/* Floating Add Button - mobile only, hidden on md+ where inline button is visible */}
       {isAdmin && (
         <Button
           onClick={handleNewTeam}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-elevated"
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-elevated md:hidden"
           size="icon"
+          aria-label="Add new team"
         >
           <Plus className="w-6 h-6" />
         </Button>

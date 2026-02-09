@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,21 +13,35 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { OlympicRings } from "@/components/OlympicRings";
 import { toast } from "sonner";
-import { Plus, Link as LinkIcon, LogOut, Trophy } from "lucide-react";
+import { Plus, Link as LinkIcon, LogOut, Trophy, Trash2 } from "lucide-react";
+import type { Id } from "../../convex/_generated/dataModel";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { user, isAuthenticated, isLoading, signOut } = useAuth();
   const leagues = useQuery(
     api.leagues.getMyLeagues,
     isAuthenticated ? {} : "skip"
   );
   const createLeague = useMutation(api.leagues.createLeague);
+  const deleteLeagueMutation = useMutation(api.leagues.deleteLeague);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newLeagueName, setNewLeagueName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: Id<"leagues">; name: string } | null>(null);
 
   if (isLoading) {
     return (
@@ -48,11 +62,9 @@ const Dashboard = () => {
     setIsCreating(true);
     try {
       const result = await createLeague({ name: newLeagueName.trim() });
-      toast.success("League created!", {
-        description: `Your league is live at /${result.slug}`,
-      });
       setNewLeagueName("");
       setIsCreateOpen(false);
+      navigate(`/${result.slug}`);
     } catch (error) {
       toast.error("Failed to create league", {
         description: error instanceof Error ? error.message : "Please try again",
@@ -64,9 +76,23 @@ const Dashboard = () => {
 
   const copyLink = (slug: string) => {
     const url = `${window.location.origin}/${slug}`;
-    navigator.clipboard.writeText(url).then(() => {
-      toast.success("Link copied!", { description: url });
-    });
+    navigator.clipboard.writeText(url).then(
+      () => toast.success("Link copied!", { description: url }),
+      () => toast.error("Couldn't copy link", { description: url })
+    );
+  };
+
+  const handleDeleteLeague = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteLeagueMutation({ leagueId: deleteTarget.id });
+      toast.success("League deleted");
+      setDeleteTarget(null);
+    } catch (error) {
+      toast.error("Failed to delete league", {
+        description: error instanceof Error ? error.message : "Please try again",
+      });
+    }
   };
 
   const handleSignOut = async () => {
@@ -143,8 +169,18 @@ const Dashboard = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => copyLink(league.slug)}
+                    aria-label="Copy league link"
                   >
                     <LinkIcon className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDeleteTarget({ id: league._id, name: league.name })}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    aria-label={`Delete ${league.name}`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </div>
               </div>
@@ -186,6 +222,26 @@ const Dashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{deleteTarget?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the league and all its teams. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteLeague}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete League
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

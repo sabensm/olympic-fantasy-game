@@ -3,6 +3,36 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
+import {
+  validateTeamName,
+  validateAvatar,
+  validateMembers,
+  validateCountries,
+} from "./validation";
+
+async function getLeagueAssignedCountries(
+  ctx: MutationCtx,
+  leagueId: Id<"leagues">,
+  excludeTeamId?: Id<"teams">
+): Promise<Set<string>> {
+  const teams = await ctx.db
+    .query("teams")
+    .withIndex("by_leagueId", (q) => q.eq("leagueId", leagueId))
+    .collect();
+
+  const assigned = new Set<string>();
+  for (const team of teams) {
+    if (excludeTeamId && team._id === excludeTeamId) continue;
+    const countries = await ctx.db
+      .query("teamCountries")
+      .withIndex("by_teamId", (q) => q.eq("teamId", team._id))
+      .collect();
+    for (const c of countries) {
+      assigned.add(c.countryCode);
+    }
+  }
+  return assigned;
+}
 
 async function requireLeagueAdmin(
   ctx: MutationCtx,
@@ -64,6 +94,21 @@ export const addTeam = mutation({
   handler: async (ctx, { leagueId, name, avatar, members, countries }) => {
     await requireLeagueAdmin(ctx, leagueId);
 
+    validateTeamName(name);
+    validateAvatar(avatar);
+    validateMembers(members);
+    validateCountries(countries);
+
+    // Prevent duplicate country drafting within the league
+    const assigned = await getLeagueAssignedCountries(ctx, leagueId);
+    for (const country of countries) {
+      if (assigned.has(country.countryCode)) {
+        throw new Error(
+          `${country.countryName} is already drafted by another team in this league`
+        );
+      }
+    }
+
     const teamId = await ctx.db.insert("teams", {
       name,
       avatar,
@@ -104,6 +149,21 @@ export const updateTeam = mutation({
       throw new Error("Team not found");
     }
     await requireLeagueAdmin(ctx, team.leagueId);
+
+    validateTeamName(name);
+    validateAvatar(avatar);
+    validateMembers(members);
+    validateCountries(countries);
+
+    // Prevent duplicate country drafting (exclude this team's current countries)
+    const assigned = await getLeagueAssignedCountries(ctx, team.leagueId, id);
+    for (const country of countries) {
+      if (assigned.has(country.countryCode)) {
+        throw new Error(
+          `${country.countryName} is already drafted by another team in this league`
+        );
+      }
+    }
 
     await ctx.db.patch(id, { name, avatar, members });
 

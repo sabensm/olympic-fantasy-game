@@ -1,7 +1,7 @@
 "use node";
 
 import { action } from "./_generated/server";
-import { api } from "./_generated/api";
+import { internal } from "./_generated/api";
 import * as cheerio from "cheerio";
 import type { Element } from "domhandler";
 
@@ -92,6 +92,33 @@ function isMilanActiveHours(): boolean {
   return utcHour >= 8 && utcHour <= 22;
 }
 
+async function fetchWithRetry(
+  url: string,
+  retries = 2,
+  delayMs = 5000
+): Promise<Response> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) return response;
+      if (attempt < retries) {
+        console.warn(`Fetch attempt ${attempt} failed (${response.status}), retrying in ${delayMs}ms...`);
+        await new Promise((r) => setTimeout(r, delayMs));
+      } else {
+        throw new Error(`Failed to fetch Wikipedia after ${retries} attempts: ${response.status}`);
+      }
+    } catch (error) {
+      if (attempt < retries) {
+        console.warn(`Fetch attempt ${attempt} error: ${error}, retrying in ${delayMs}ms...`);
+        await new Promise((r) => setTimeout(r, delayMs));
+      } else {
+        throw error;
+      }
+    }
+  }
+  throw new Error("Unreachable");
+}
+
 export const scrapeWikipedia = action({
   args: {},
   handler: async (ctx) => {
@@ -101,10 +128,7 @@ export const scrapeWikipedia = action({
     }
 
     console.log("Fetching Wikipedia medal table...");
-    const response = await fetch(WIKIPEDIA_URL);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch Wikipedia: ${response.status}`);
-    }
+    const response = await fetchWithRetry(WIKIPEDIA_URL);
 
     const html = await response.text();
     const $ = cheerio.load(html);
@@ -154,9 +178,13 @@ export const scrapeWikipedia = action({
         // Remove trailing asterisk (host nation marker) and whitespace
         country = country.replace(/\*+$/, "").trim();
 
-        // Look up IOC code from country name
-        const countryCode = COUNTRY_TO_IOC[country] || "";
-        const countryFlag = countryCode ? IOC_FLAGS[countryCode] : undefined;
+        // Look up IOC code from country name — skip unknown countries
+        const countryCode = COUNTRY_TO_IOC[country];
+        if (!countryCode) {
+          console.warn(`Unknown country "${country}" — skipping`);
+          return;
+        }
+        const countryFlag = IOC_FLAGS[countryCode];
 
         // Medal counts are in the <td> cells
         const cells = $(row).find("td");
@@ -184,11 +212,17 @@ export const scrapeWikipedia = action({
 
     console.log(`Parsed ${records.length} countries from Wikipedia.`);
 
-    if (records.length > 0) {
-      await ctx.runMutation(api.medals.upsertMedals, { records });
-      console.log("Medal data saved to Convex.");
-    } else {
-      console.log("No medal data found - table may not be populated yet.");
+    if (records.length === 0) {
+      console.warn("No medal data found — table may not be populated yet or Wikipedia layout changed.");
+      return;
     }
+
+    if (records.length < 5) {
+      console.warn(`Only ${records.length} countries parsed — possible Wikipedia layout change. Skipping update.`);
+      return;
+    }
+
+    await ctx.runMutation(internal.medals.upsertMedals, { records });
+    console.log("Medal data saved to Convex.");
   },
 });

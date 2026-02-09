@@ -332,3 +332,19 @@
     border-radius: 0 0 3px 0;
   }
 }
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .snowflake,
+  .snowflake-slow,
+  .animate-podium-rise,
+  .animate-champion,
+  .medal-shine::after,
+  .animate-float {
+    animation: none !important;
+  }
+
+  .animate-podium-rise {
+    opacity: 1;
+  }
+}

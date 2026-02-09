@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { validateLeagueName } from "./validation";
 
 const RESERVED_SLUGS = [
   "sign-in",
@@ -32,6 +33,8 @@ export const createLeague = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
+
+    validateLeagueName(name);
 
     let slug = generateSlug(name);
     if (!slug) {
