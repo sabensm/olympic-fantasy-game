@@ -17,11 +17,18 @@ const Loading = () => (
   </div>
 );
 
+const OlympicsOverBanner = () => (
+  <div className="w-full bg-olympic-blue text-white text-center py-2 px-4 text-sm font-medium">
+    🏅 Milan Cortina 2026 has concluded. Thanks for playing — see you at LA 2028! 🏅
+  </div>
+);
+
 const App = () => (
   <TooltipProvider>
     <Toaster />
     <Sonner />
     <BrowserRouter>
+      <OlympicsOverBanner />
       <Suspense fallback={<Loading />}>
         <Routes>
           <Route path="/" element={<Landing />} />

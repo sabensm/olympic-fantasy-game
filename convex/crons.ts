@@ -1,12 +1,6 @@
 import { cronJobs } from "convex/server";
-import { api } from "./_generated/api";
 
+// Milan Cortina 2026 is over — scraping disabled
 const crons = cronJobs();
-
-crons.interval(
-  "scrape Wikipedia medal table",
-  { minutes: 30 },
-  api.scrape.scrapeWikipedia
-);
 
 export default crons;
